@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package aurora.proto;
+option optimize_for = LITE_RUNTIME;
+
+// Commands to probe the state of connection.
+// When either client or broker doesn't receive commands for certain
+// amount of time, they will send a Ping probe.
+message CommandPing {
+}
+message CommandPong {
+}
+
+enum CompressionType {
+  NONE = 0;
+  LZ4 = 1;
+  ZLIB = 2;
+  ZSTD = 3;
+  SNAPPY = 4;
+}
+
+message Message {
+  bytes payload = 1;
+  map<string, string> properties = 2;
+  CompressionType compression = 3;
+  int64 created_at = 4;
+}
+
+message MessageIdData {
+  uint64 ledgerId = 1;
+  uint64 entryId  = 2;
+  int32 partition = 3;
+  int32 batch_index = 4;
+  repeated int64 ack_set = 5;
+  int32 batch_size = 6;
+}
+
+message CommandSend {
+  uint64 producer_id = 1;
+  uint64 sequence_id = 2;
+  int32 num_messages = 3;
+}
+
+message CommandSendReceipt {
+  uint64 producer_id = 1;
+  uint64 sequence_id = 2;
+  MessageIdData message_id = 3;
+}
+
+message CommandSendError {
+  uint64 producer_id = 1;
+  uint64 sequence_id = 2;
+  ServerError error  = 3;
+  string message     = 4;
+}
+
+enum ServerError {
+  UnknownError        = 0;
+  MetadataError       = 1; // Error with ZK/metadata
+  PersistenceError    = 2; // Error writing reading from BK
+  AuthenticationError = 3; // Non valid authentication
+  AuthorizationError  = 4; // Not authorized to use resource
+
+  ConsumerBusy        = 5; // Unable to subscribe/unsubscribe because
+  // other consumers are connected
+  ServiceNotReady     = 6; // Any error that requires client retry operation with a fresh lookup
+  ProducerBlockedQuotaExceededError = 7; // Unable to create producer because backlog quota exceeded
+  ProducerBlockedQuotaExceededException = 8; // Exception while creating producer because quota exceeded
+  ChecksumError = 9; // Error while verifying message checksum
+  UnsupportedVersionError = 10; // Error when an older client/version doesn't support a required feature
+  TopicNotFound = 11; // Topic not found
+  SubscriptionNotFound = 12; // Subscription not found
+  ConsumerNotFound = 13; // Consumer not found
+  TooManyRequests = 14; // Error with too many simultaneously request
+  TopicTerminatedError = 15; // The topic has been terminated
+
+  ProducerBusy         = 16; // Producer with same name is already connected
+  InvalidTopicName = 17; // The topic name is not valid
+
+  IncompatibleSchema = 18; // Specified schema was incompatible with topic schema
+  ConsumerAssignError = 19; // Dispatcher assign consumer error
+
+  TransactionCoordinatorNotFound = 20; // Transaction coordinator not found error
+  InvalidTxnStatus = 21; // Invalid txn status error
+  NotAllowedError = 22; // Not allowed error
+
+  TransactionConflict = 23; // Ack with transaction conflict
+  TransactionNotFound = 24; // Transaction not found
+
+  ProducerFenced = 25; // When a producer asks and fail to get exclusive producer access,
+  // or loses the eclusive status after a reconnection, the broker will
+  // use this error to indicate that this producer is now permanently
+  // fenced. Applications are now supposed to close it and create a
+  // new producer
+}
+
+message BaseCommand {
+  enum Type {
+    SEND        = 0;
+    SEND_RECEIPT= 1;
+    SEND_ERROR  = 2;
+  }
+
+
+  Type type = 1;
+
+  CommandSend send                = 2;
+  CommandSendReceipt send_receipt = 3;
+  CommandSendError send_error     = 4;
+}

@@ -1,0 +1,5 @@
+// example config jsonc file
+{
+    "port": "6666",
+    "log_level": "debug"
+}

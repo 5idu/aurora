@@ -1,0 +1,33 @@
+version: '2'
+
+services:
+  etcd1:
+    image: quay.io/coreos/etcd
+    container_name: etcd
+    volumes:
+      - ../tmp/etcd-data:/etcd-data
+    command:
+      - "/usr/local/bin/etcd"
+      - "--name"
+      - "etcd1"
+      - "--data-dir"
+      - "/etcd-data"
+      - "--advertise-client-urls"
+      - "http://0.0.0.0:2379"
+      - --listen-client-urls
+      - "http://0.0.0.0:2379"
+      - "--initial-advertise-peer-urls"
+      - "http://0.0.0.0:2380"
+      - "--listen-peer-urls"
+      - "http://0.0.0.0:2380"
+      - "--initial-cluster-token"
+      - "tkn"
+      - "--initial-cluster"
+      - "etcd1=http://0.0.0.0:2380"
+      - "--initial-cluster-state"
+      - "new"
+    ports:
+      - 2379:2379
+      - 2380:2380
+    environment:
+      ETCDCTL_API: 3
